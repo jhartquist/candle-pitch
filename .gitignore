@@ -1,0 +1,13 @@
+# Rust
+target/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Weights / artifacts
+weights/
+
+# OS
+.DS_Store

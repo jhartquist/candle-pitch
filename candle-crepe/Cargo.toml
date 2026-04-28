@@ -1,0 +1,17 @@
+[package]
+name = "candle-crepe"
+description = "CREPE pitch detection model for the candle ML framework"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+documentation = "https://docs.rs/candle-crepe"
+readme = "README.md"
+keywords = ["audio", "pitch-detection", "candle", "ml", "dsp"]
+categories = ["multimedia::audio", "science"]
+exclude = ["scripts/", "tests/fixtures/"]
+
+[dependencies]
