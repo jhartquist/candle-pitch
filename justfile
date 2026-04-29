@@ -27,3 +27,14 @@ crepe-export capacity:
 # dump the parity fixture to candle-crepe/tests/fixtures/{capacity}.safetensors.
 crepe-pytorch-parity capacity:
     ./candle-crepe/scripts/pytorch_parity.py {{capacity}} candle-crepe/weights/{{capacity}}.safetensors
+
+# Export weights and dump the parity fixture for one capacity.
+crepe-prepare capacity: (crepe-export capacity) (crepe-pytorch-parity capacity)
+
+# Export weights and dump parity fixtures for all five capacities.
+crepe-prepare-all: \
+    (crepe-prepare "tiny") \
+    (crepe-prepare "small") \
+    (crepe-prepare "medium") \
+    (crepe-prepare "large") \
+    (crepe-prepare "full")
