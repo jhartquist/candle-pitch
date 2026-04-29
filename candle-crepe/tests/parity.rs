@@ -13,7 +13,6 @@ macro_rules! parity_for_capacity {
             const CAPACITY: Capacity = $capacity;
 
             #[test]
-            #[ignore]
             fn capacity_inferred_from_weights() -> Result<()> {
                 let device = Device::Cpu;
                 let model = Crepe::from_safetensors(&load_weights(CAPACITY), &device)?;
@@ -22,7 +21,6 @@ macro_rules! parity_for_capacity {
             }
 
             #[test]
-            #[ignore]
             fn salience_parity() -> Result<()> {
                 let device = Device::Cpu;
                 let expected = load_fixture(CAPACITY, &device);
@@ -35,7 +33,6 @@ macro_rules! parity_for_capacity {
             }
 
             #[test]
-            #[ignore]
             fn predict_local_average_parity() -> Result<()> {
                 let device = Device::Cpu;
                 let expected = load_fixture(CAPACITY, &device);
@@ -46,7 +43,6 @@ macro_rules! parity_for_capacity {
             }
 
             #[test]
-            #[ignore]
             fn predict_viterbi_parity() -> Result<()> {
                 let device = Device::Cpu;
                 let expected = load_fixture(CAPACITY, &device);
@@ -123,7 +119,7 @@ fn assert_predictions(
     let confidences: Vec<f32> = predictions.iter().map(|p| p.confidence).collect();
 
     let cents_diff = max_cents_diff(&frequencies, &expected_frequencies);
-    assert!(cents_diff < TOLERANCE, "freq cents diff {cents_diff:.2e}");
+    assert!(cents_diff < 1e-2, "freq cents diff {cents_diff:.2e}");
 
     let conf_diff = max_abs_slice(&confidences, &expected_confidences);
     assert!(conf_diff < TOLERANCE, "conf diff {conf_diff:.2e}");

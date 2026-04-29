@@ -1,5 +1,7 @@
-use candle_core::{Device, Result, Tensor};
-use candle_nn::{BatchNorm, Conv1d, Conv1dConfig, Linear, VarBuilder, batch_norm, conv1d, linear};
+use candle_core::{D, Device, Module, ModuleT, Result, Tensor};
+use candle_nn::{
+    BatchNorm, Conv1d, Conv1dConfig, Linear, VarBuilder, batch_norm, conv1d, linear, ops,
+};
 
 use crate::inference::{FRAME_LENGTH, HOP_LENGTH};
 use crate::weights::load_safetensors;
@@ -93,7 +95,15 @@ impl ConvBlock {
     }
 
     fn forward(&self, x: &Tensor) -> Result<Tensor> {
-        todo!()
+        let (left, right) = self.padding;
+        let padded = x.pad_with_zeros(D::Minus1, left, right)?;
+        let conv = self.conv.forward(&padded)?.relu()?;
+        let normed = self.bn.forward_t(&conv, false)?;
+        // max_pool1d via 2d on (B, C, L, 1)
+        normed
+            .unsqueeze(D::Minus1)?
+            .max_pool2d_with_stride((2, 1), (2, 1))?
+            .squeeze(D::Minus1)
     }
 }
 
@@ -145,11 +155,29 @@ impl Crepe {
     }
 
     pub fn forward(&self, frames: &Tensor) -> Result<Tensor> {
-        todo!()
+        let mut x = frames.clone();
+        for block in &self.blocks {
+            x = block.forward(&x)?;
+        }
+        let logits = self
+            .classifier
+            .forward(&x.permute((0, 2, 1))?.flatten_from(1)?)?;
+        ops::sigmoid(&logits)
     }
 
     pub fn salience(&self, audio: &[f32]) -> Result<Tensor> {
-        todo!()
+        // conv1 output for the full model is ~2.7 GB at 2727 frames; chunking caps peak memory.
+        const BATCH: usize = 256;
+        let frames = self.frame(audio)?;
+        let n = frames.dim(0)?;
+        let chunks: Vec<Tensor> = (0..n)
+            .step_by(BATCH)
+            .map(|start| {
+                let len = BATCH.min(n - start);
+                self.forward(&frames.narrow(0, start, len)?)
+            })
+            .collect::<Result<_>>()?;
+        Tensor::cat(&chunks, 0)
     }
 
     fn frame(&self, audio: &[f32]) -> Result<Tensor> {

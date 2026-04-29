@@ -30,7 +30,20 @@ pub(crate) struct Decoded {
 }
 
 pub fn predict(model: &Crepe, audio: &[f32], decoder: Decoder) -> Result<Vec<PredictionFrame>> {
-    todo!()
+    let salience = model.salience(audio)?;
+    let decoded = decode(&salience, decoder)?;
+    let time_step = HOP_LENGTH as f32 / SAMPLE_RATE as f32;
+    Ok(decoded
+        .frequencies_hz
+        .iter()
+        .zip(&decoded.confidences)
+        .enumerate()
+        .map(|(i, (&frequency_hz, &confidence))| PredictionFrame {
+            time_seconds: i as f32 * time_step,
+            frequency_hz,
+            confidence,
+        })
+        .collect())
 }
 
 pub(crate) fn decode(salience: &Tensor, decoder: Decoder) -> Result<Decoded> {
