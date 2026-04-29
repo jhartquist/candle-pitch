@@ -19,11 +19,16 @@ pub struct PredictionFrame {
     pub confidence: f32,
 }
 
+pub(crate) struct Decoded {
+    pub frequencies_hz: Vec<f32>,
+    pub confidences: Vec<f32>,
+}
+
 pub fn predict(model: &Crepe, audio: &[f32], decoder: Decoder) -> Result<Vec<PredictionFrame>> {
     todo!()
 }
 
-pub(crate) fn decode(salience: &Tensor, decoder: Decoder) -> Result<(Vec<f32>, Vec<f32>)> {
+pub(crate) fn decode(salience: &Tensor, decoder: Decoder) -> Result<Decoded> {
     todo!()
 }
 
@@ -50,14 +55,15 @@ mod tests {
     fn decode_local_average_parity() -> Result<()> {
         let device = Device::Cpu;
         let expected = load_fixture(CAPACITY, &device);
-        let (frequencies, confidences) = decode(&expected["salience"], Decoder::LocalAverage)?;
+        let decoded = decode(&expected["salience"], Decoder::LocalAverage)?;
         let expected_frequencies: Vec<f32> = expected["frequency_local"].to_vec1()?;
         let expected_confidences: Vec<f32> = expected["confidence"].to_vec1()?;
 
-        let cents_diff = max_cents_diff(&frequencies, &expected_frequencies);
+        let cents_diff = max_cents_diff(&decoded.frequencies_hz, &expected_frequencies);
         assert!(cents_diff < TOLERANCE, "freq cents diff {cents_diff:.2e}");
 
-        let conf_diff = confidences
+        let conf_diff = decoded
+            .confidences
             .iter()
             .zip(&expected_confidences)
             .map(|(a, b)| (a - b).abs())
@@ -71,9 +77,9 @@ mod tests {
     fn decode_viterbi_parity() -> Result<()> {
         let device = Device::Cpu;
         let expected = load_fixture(CAPACITY, &device);
-        let (frequencies, _) = decode(&expected["salience"], Decoder::Viterbi)?;
+        let decoded = decode(&expected["salience"], Decoder::Viterbi)?;
         let expected_frequencies: Vec<f32> = expected["frequency_viterbi"].to_vec1()?;
-        let cents_diff = max_cents_diff(&frequencies, &expected_frequencies);
+        let cents_diff = max_cents_diff(&decoded.frequencies_hz, &expected_frequencies);
         assert!(
             cents_diff < TOLERANCE,
             "viterbi cents diff {cents_diff:.2e}"
