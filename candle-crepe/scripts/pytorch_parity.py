@@ -259,6 +259,7 @@ def dump_fixture(
     fixture["frequency_local"] = full_freq_local.astype(np.float32)
     fixture["frequency_viterbi"] = full_freq_viterbi.astype(np.float32)
     fixture["confidence"] = full_conf.astype(np.float32)
+    fixture["slice_start"] = np.array(start, dtype=np.int64)
 
     path = REPO_ROOT / "candle-crepe" / "tests" / "fixtures" / f"{capacity}.safetensors"
     path.parent.mkdir(parents=True, exist_ok=True)
