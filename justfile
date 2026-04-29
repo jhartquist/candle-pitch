@@ -7,7 +7,10 @@ build:
     cargo build --workspace
 
 test:
-    cargo test --workspace
+    cargo test --release --workspace -- --test-threads=1
+
+test-fast:
+    cargo test --workspace --lib
 
 fmt:
     cargo fmt --all
@@ -15,7 +18,7 @@ fmt:
 lint:
     cargo clippy --all-targets -- -D warnings
 
-check: fmt lint test
+check: fmt lint test-fast
 
 # === CREPE ===
 
