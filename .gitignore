@@ -8,6 +8,7 @@ __pycache__/
 
 # Weights / artifacts
 weights/
+**/tests/fixtures/
 
 # OS
 .DS_Store
