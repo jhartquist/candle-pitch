@@ -48,6 +48,11 @@ HOP = 160
 # in a high-confidence region so it covers actual notes, not silence/attack.
 SLICE_FRAMES = 16
 
+# chunk size for the full-clip pytorch forward. Conv1 output for the full model
+# is ~2.7GB at 2727 frames in one shot, which OOMs alongside TF; chunking keeps
+# peak memory bounded.
+BATCH_SIZE = 256
+
 # bin index -> cents. bin 0 corresponds to ~32.7 Hz (C1) and bins are spaced
 # 20 cents apart up to bin 359.
 CENTS_MAPPING = np.linspace(0, 7180, PITCH_BINS) + 1997.3794084376191
@@ -201,6 +206,16 @@ def _viterbi(
     return path
 
 
+def forward_batched(model: Crepe, frames: np.ndarray) -> np.ndarray:
+    """Forward the full clip in chunks so peak memory stays bounded."""
+    outputs = []
+    for i in range(0, len(frames), BATCH_SIZE):
+        chunk = torch.from_numpy(frames[i : i + BATCH_SIZE]).unsqueeze(1)
+        with torch.no_grad():
+            outputs.append(model(chunk).numpy())
+    return np.concatenate(outputs)
+
+
 def capture_intermediates(model: Crepe, frames: torch.Tensor) -> dict[str, torch.Tensor]:
     """Forward pass with a hook on each conv block, returning every block's
     post-pool output alongside the input frames and the final salience."""
@@ -279,8 +294,7 @@ def verify(capacity: str, weights_path: Path) -> None:
 
     model = Crepe(capacity).eval()
     load_weights(model, weights_path)
-    with torch.no_grad():
-        torch_act = model(torch.from_numpy(frames).unsqueeze(1)).numpy()
+    torch_act = forward_batched(model, frames)
 
     _, ref_freq_local, ref_conf, tf_act = crepe.predict(
         audio, SAMPLE_RATE, capacity, viterbi=False, verbose=0,
