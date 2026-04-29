@@ -25,6 +25,18 @@ impl Capacity {
     }
 }
 
+impl std::fmt::Display for Capacity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Tiny => "tiny",
+            Self::Small => "small",
+            Self::Medium => "medium",
+            Self::Large => "large",
+            Self::Full => "full",
+        })
+    }
+}
+
 struct ConvBlock {
     conv: Conv1d,
     bn: BatchNorm,
@@ -79,4 +91,28 @@ impl Crepe {
     fn frame(&self, audio: &[f32]) -> Result<Tensor> {
         todo!()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::{load_fixture, load_weights, max_abs_diff};
+
+    const CAPACITY: Capacity = Capacity::Tiny;
+    const TOLERANCE: f32 = 1e-4;
+
+    #[test]
+    #[ignore]
+    fn frame_parity() -> Result<()> {
+        let device = Device::Cpu;
+        let expected = load_fixture(CAPACITY, &device);
+        let model = Crepe::from_safetensors(&load_weights(CAPACITY), &device)?;
+        let audio: Vec<f32> = expected["audio_16k"].to_vec1()?;
+        let slice_start = expected["slice_start"].to_scalar::<i64>()? as usize;
+        let frames = model.frame(&audio)?.narrow(0, slice_start, 16)?;
+        let diff = max_abs_diff(&frames, &expected["frames"])?;
+        assert!(diff < TOLERANCE, "frames diff {diff:.2e}");
+        Ok(())
+    }
+
 }
