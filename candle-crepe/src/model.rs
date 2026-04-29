@@ -1,0 +1,82 @@
+use candle_core::{Device, Result, Tensor};
+use candle_nn::{BatchNorm, Conv1d, Linear, VarBuilder};
+
+pub const PITCH_BINS: usize = 360;
+
+const FILTERS: [usize; 6] = [32, 4, 4, 4, 8, 16];
+const KERNELS: [usize; 6] = [512, 64, 64, 64, 64, 64];
+const STRIDES: [usize; 6] = [4, 1, 1, 1, 1, 1];
+const PADDINGS: [(usize, usize); 6] =
+    [(254, 254), (31, 32), (31, 32), (31, 32), (31, 32), (31, 32)];
+const BN_EPS: f64 = 1e-3;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Capacity {
+    Tiny,
+    Small,
+    Medium,
+    Large,
+    Full,
+}
+
+impl Capacity {
+    fn multiplier(self) -> usize {
+        todo!()
+    }
+}
+
+struct ConvBlock {
+    conv: Conv1d,
+    bn: BatchNorm,
+    padding: (usize, usize),
+}
+
+impl ConvBlock {
+    fn new(
+        in_channels: usize,
+        out_channels: usize,
+        kernel: usize,
+        stride: usize,
+        padding: (usize, usize),
+        vb: VarBuilder,
+    ) -> Result<Self> {
+        todo!()
+    }
+
+    fn forward(&self, x: &Tensor) -> Result<Tensor> {
+        todo!()
+    }
+}
+
+pub struct Crepe {
+    blocks: [ConvBlock; 6],
+    classifier: Linear,
+    capacity: Capacity,
+    device: Device,
+}
+
+impl Crepe {
+    pub fn from_safetensors(bytes: &[u8], device: &Device) -> Result<Self> {
+        todo!()
+    }
+
+    pub fn new(vb: VarBuilder) -> Result<Self> {
+        todo!()
+    }
+
+    pub fn capacity(&self) -> Capacity {
+        self.capacity
+    }
+
+    pub fn forward(&self, frames: &Tensor) -> Result<Tensor> {
+        todo!()
+    }
+
+    pub fn salience(&self, audio: &[f32]) -> Result<Tensor> {
+        todo!()
+    }
+
+    fn frame(&self, audio: &[f32]) -> Result<Tensor> {
+        todo!()
+    }
+}

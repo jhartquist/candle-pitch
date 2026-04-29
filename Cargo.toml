@@ -10,3 +10,6 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/jhartquist/candle-pitch"
 homepage = "https://github.com/jhartquist/candle-pitch"
 authors = ["John Hartquist <john@hartquist.com>"]
+
+[workspace.lints.rust]
+unused = "allow"
