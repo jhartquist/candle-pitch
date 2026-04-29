@@ -16,3 +16,9 @@ lint:
     cargo clippy --all-targets -- -D warnings
 
 check: fmt lint test
+
+# === CREPE ===
+
+# Export CREPE weights to safetensors. capacity in {tiny, small, medium, large, full}.
+crepe-export capacity:
+    ./candle-crepe/scripts/export_safetensors.py {{capacity}} candle-crepe/weights/{{capacity}}.safetensors
