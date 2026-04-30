@@ -47,3 +47,11 @@ crepe-prepare-all: \
 # Export SwiftF0 weights to safetensors.
 swift-f0-export:
     ./candle-swift-f0/scripts/export_safetensors.py candle-swift-f0/weights/swift-f0.safetensors
+
+# Validate the safetensors via PyTorch reimpl against the ONNX reference, then
+# dump the parity fixture to candle-swift-f0/tests/fixtures/swift-f0.safetensors.
+swift-f0-pytorch-parity:
+    ./candle-swift-f0/scripts/pytorch_parity.py candle-swift-f0/weights/swift-f0.safetensors
+
+# Export weights and dump the parity fixture.
+swift-f0-prepare: swift-f0-export swift-f0-pytorch-parity
