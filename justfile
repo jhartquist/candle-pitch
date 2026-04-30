@@ -41,3 +41,9 @@ crepe-prepare-all: \
     (crepe-prepare "medium") \
     (crepe-prepare "large") \
     (crepe-prepare "full")
+
+# === SwiftF0 ===
+
+# Export SwiftF0 weights to safetensors.
+swift-f0-export:
+    ./candle-swift-f0/scripts/export_safetensors.py candle-swift-f0/weights/swift-f0.safetensors
