@@ -12,4 +12,4 @@ homepage = "https://github.com/jhartquist/candle-pitch"
 authors = ["John Hartquist <john@hartquist.com>"]
 
 [workspace.lints.rust]
-unused = "allow"
+unsafe_code = "deny"

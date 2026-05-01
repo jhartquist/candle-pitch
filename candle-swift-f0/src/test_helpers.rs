@@ -2,14 +2,6 @@ use std::collections::HashMap;
 
 use candle_core::{Device, Result, Tensor};
 
-pub(crate) fn load_weights() -> Vec<u8> {
-    let path = format!(
-        "{}/weights/swift-f0.safetensors",
-        env!("CARGO_MANIFEST_DIR")
-    );
-    std::fs::read(&path).unwrap_or_else(|e| panic!("read {path}: {e}"))
-}
-
 pub(crate) fn load_fixture(device: &Device) -> HashMap<String, Tensor> {
     let path = format!(
         "{}/tests/fixtures/swift-f0.safetensors",
