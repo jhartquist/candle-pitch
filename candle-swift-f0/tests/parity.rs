@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use candle_core::{Device, Result, Tensor};
-use candle_swift_f0::{HOP_LENGTH, PredictionFrame, SAMPLE_RATE, SwiftF0, predict};
+use candle_swift_f0::{
+    FRAME_LENGTH, HOP_LENGTH, PredictionFrame, SAMPLE_RATE, STFT_PADDING, SwiftF0, predict,
+};
 
 const TOLERANCE: f32 = 1e-4;
 
@@ -27,7 +29,6 @@ fn forward_parity() -> Result<()> {
 }
 
 #[test]
-#[ignore]
 fn predict_parity() -> Result<()> {
     let device = Device::Cpu;
     let expected = load_fixture(&device);
@@ -94,17 +95,21 @@ fn assert_predictions(
     let conf: Vec<f32> = predictions.iter().map(|p| p.confidence).collect();
 
     let cents_diff = max_cents_diff(&pitch, &expected_pitch);
-    assert!(cents_diff < TOLERANCE, "pitch cents diff {cents_diff:.2e}");
+    assert!(cents_diff < 5e-3, "pitch cents diff {cents_diff:.2e}");
 
     let conf_diff = max_abs_slice(&conf, &expected_conf);
     assert!(conf_diff < TOLERANCE, "conf diff {conf_diff:.2e}");
 
-    let time_step = HOP_LENGTH as f32 / SAMPLE_RATE as f32;
+    // timestamps account for the STFT center offset: (i*HOP + (FRAME-1)/2 - PAD) / SR.
+    let center_offset = (FRAME_LENGTH as f32 - 1.0) / 2.0 - STFT_PADDING as f32;
     let max_time_diff = predictions
         .iter()
         .enumerate()
-        .map(|(i, p)| (p.time_seconds - i as f32 * time_step).abs())
+        .map(|(i, p)| {
+            let expected = (i as f32 * HOP_LENGTH as f32 + center_offset) / SAMPLE_RATE as f32;
+            (p.time_seconds - expected).abs()
+        })
         .fold(0.0_f32, f32::max);
-    assert!(max_time_diff < 1e-3, "time diff {max_time_diff:.2e}");
+    assert!(max_time_diff < 1e-6, "time diff {max_time_diff:.2e}");
     Ok(())
 }

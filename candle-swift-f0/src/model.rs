@@ -40,7 +40,6 @@ pub struct SwiftF0 {
     blocks: Vec<ConvBlock>,
     freq_projection: Conv1d,
     frontend: Frontend,
-    pitch_bin_centers: Tensor,
 }
 
 impl SwiftF0 {
@@ -64,12 +63,10 @@ impl SwiftF0 {
             vb.pp("freq_projection"),
         )?;
 
-        let device = vb.device();
         Ok(Self {
             blocks,
             freq_projection,
-            frontend: Frontend::new(device),
-            pitch_bin_centers: build_pitch_bin_centers(device)?,
+            frontend: Frontend::new(vb.device()),
         })
     }
 
@@ -84,10 +81,7 @@ impl SwiftF0 {
     }
 }
 
-fn build_pitch_bin_centers(device: &Device) -> Result<Tensor> {
+pub(crate) fn pitch_bin_centers() -> [f32; N_PITCH_BINS] {
     let delta = (F_MAX / F_MIN).log2() / (N_PITCH_BINS as f32 - 1.0);
-    let centers: Vec<f32> = (0..N_PITCH_BINS)
-        .map(|i| F_MIN * 2f32.powf(i as f32 * delta))
-        .collect();
-    Tensor::from_vec(centers, N_PITCH_BINS, device)
+    std::array::from_fn(|i| F_MIN * 2f32.powf(i as f32 * delta))
 }
