@@ -336,6 +336,10 @@ dependencies = [
 [[package]]
 name = "candle-swift-f0"
 version = "0.1.0"
+dependencies = [
+ "candle-core",
+ "candle-nn",
+]
 
 [[package]]
 name = "castaway"
