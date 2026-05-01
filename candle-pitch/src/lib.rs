@@ -1,3 +1,5 @@
+pub mod notes;
+
 use clap::ValueEnum;
 
 #[derive(Clone, Copy, Debug, ValueEnum)]

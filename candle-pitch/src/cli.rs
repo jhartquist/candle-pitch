@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use candle_core::Device;
 use candle_crepe::{Crepe, predict};
+use candle_pitch::notes::{self, Note};
 use candle_pitch::{Capacity, Decoder};
 use clap::Parser;
 use serde::Serialize;
@@ -42,6 +43,7 @@ struct Output {
     decoder: &'static str,
     audio: AudioInfo,
     frames: Vec<Frame>,
+    notes: Vec<Note>,
 }
 
 #[derive(Serialize)]
@@ -81,6 +83,8 @@ pub fn run(args: Args) -> Result<(), DynError> {
 
     // run inference
     let predictions = predict(&model, &samples_mono_16k, args.decoder.into())?;
+    // 0.5 voicing threshold, 100 cents (1 semitone) max pitch jump within a note
+    let notes = notes::segment(&predictions, 0.5, 100.0);
 
     // assemble & return output
     let output = Output {
@@ -104,6 +108,7 @@ pub fn run(args: Args) -> Result<(), DynError> {
                 confidence: p.confidence,
             })
             .collect(),
+        notes,
     };
     let json = serde_json::to_string_pretty(&output)?;
     match args.output {
