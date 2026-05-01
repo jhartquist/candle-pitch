@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 
-use candle_core::Device;
 use candle_crepe::{Crepe, predict};
 use candle_pitch::notes::{self, Note};
-use candle_pitch::{Capacity, Decoder};
+use candle_pitch::{Capacity, Decoder, DeviceKind};
 use clap::Parser;
 use serde::Serialize;
 
@@ -39,6 +38,10 @@ pub struct Args {
     /// Fundamental-frequency decoder.
     #[arg(long, value_enum, default_value = "viterbi")]
     decoder: Decoder,
+
+    /// Inference device. Auto picks cuda > metal > cpu among compiled-in backends.
+    #[arg(long, value_enum, default_value_t = DeviceKind::default())]
+    device: DeviceKind,
 }
 
 #[derive(Serialize)]
@@ -84,7 +87,8 @@ pub fn run(args: Args) -> Result<(), DynError> {
         .join(format!("{crepe_capacity}.safetensors"));
     let weights = std::fs::read(&weights_path)
         .map_err(|e| format!("read weights {}: {e}", weights_path.display()))?;
-    let model = Crepe::from_safetensors(&weights, &Device::Cpu)?;
+    let device = args.device.into_device()?;
+    let model = Crepe::from_safetensors(&weights, &device)?;
 
     // run inference
     let predictions = predict(&model, &samples_mono_16k, args.decoder.into())?;

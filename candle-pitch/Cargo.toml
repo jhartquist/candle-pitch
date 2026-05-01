@@ -12,6 +12,10 @@ readme = "README.md"
 keywords = ["audio", "pitch-detection", "candle", "cli"]
 categories = ["command-line-utilities", "multimedia::audio"]
 
+[features]
+metal = ["candle-crepe/metal", "candle-core/metal"]
+cuda = ["candle-crepe/cuda", "candle-core/cuda"]
+
 [dependencies]
 candle-core = "0.10.2"
 candle-crepe = { version = "0.1.0", path = "../candle-crepe" }

@@ -37,3 +37,41 @@ impl From<Decoder> for candle_crepe::Decoder {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug, Default, ValueEnum)]
+pub enum DeviceKind {
+    #[default]
+    Auto,
+    Cpu,
+    #[cfg(feature = "metal")]
+    Metal,
+    #[cfg(feature = "cuda")]
+    Cuda,
+}
+
+impl DeviceKind {
+    pub fn into_device(self) -> candle_core::Result<candle_core::Device> {
+        match self {
+            DeviceKind::Auto => auto_select(),
+            DeviceKind::Cpu => Ok(candle_core::Device::Cpu),
+            #[cfg(feature = "metal")]
+            DeviceKind::Metal => candle_core::Device::new_metal(0),
+            #[cfg(feature = "cuda")]
+            DeviceKind::Cuda => candle_core::Device::new_cuda(0),
+        }
+    }
+}
+
+fn auto_select() -> candle_core::Result<candle_core::Device> {
+    #[cfg(feature = "cuda")]
+    if let Ok(d) = candle_core::Device::new_cuda(0) {
+        eprintln!("device: cuda");
+        return Ok(d);
+    }
+    #[cfg(feature = "metal")]
+    if let Ok(d) = candle_core::Device::new_metal(0) {
+        eprintln!("device: metal");
+        return Ok(d);
+    }
+    Ok(candle_core::Device::Cpu)
+}
