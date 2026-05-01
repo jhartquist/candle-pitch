@@ -172,6 +172,9 @@ def dump_fixture(
     for name in ("log_mag", *(f"conv{i}" for i in range(1, len(CHANNELS) + 1)), "freq_projection"):
         tensor = captured[name].numpy()
         fixture[name] = np.ascontiguousarray(tensor[..., start:end])
+    # Store freq_projection in logits layout (B, T, N) so it matches what our
+    # forward() returns; the rest of the model captures stay in (B, C, ..., T).
+    fixture["freq_projection"] = np.ascontiguousarray(fixture["freq_projection"].transpose(0, 2, 1))
 
     path = REPO_ROOT / "candle-swift-f0" / "tests" / "fixtures" / "swift-f0.safetensors"
     path.parent.mkdir(parents=True, exist_ok=True)

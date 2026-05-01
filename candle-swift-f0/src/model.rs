@@ -49,3 +49,29 @@ impl SwiftF0 {
         todo!()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::{load_fixture, load_weights, max_abs_diff};
+    use candle_core::D;
+
+    const TOLERANCE: f32 = 1e-4;
+    const SLICE_FRAMES: usize = 16;
+
+    #[test]
+    #[ignore]
+    fn frontend_parity() -> Result<()> {
+        let device = Device::Cpu;
+        let expected = load_fixture(&device);
+        let model = SwiftF0::from_safetensors(&load_weights(), &device)?;
+        let audio: Vec<f32> = expected["audio_16k"].to_vec1()?;
+        let slice_start = expected["slice_start"].to_scalar::<i64>()? as usize;
+        let log_mag = model
+            .frontend(&audio)?
+            .narrow(D::Minus1, slice_start, SLICE_FRAMES)?;
+        let diff = max_abs_diff(&log_mag, &expected["log_mag"])?;
+        assert!(diff < TOLERANCE, "log_mag diff {diff:.2e}");
+        Ok(())
+    }
+}
