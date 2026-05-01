@@ -6,10 +6,10 @@ Pitch detection models implemented with Hugging Face's [`candle`](https://github
 
 | Crate | Model | Status |
 |---|---|---|
-| [`candle-crepe`](candle-crepe) | CREPE (Kim et al. 2018) | in progress |
-| `candle-swift-f0` | Swift-F0 (Lars 2024) | planned |
+| [`candle-crepe`](candle-crepe) | CREPE (Kim et al. 2018) | done |
+| [`candle-swift-f0`](candle-swift-f0) | Swift-F0 (Nieradzik 2024) | done |
 | `candle-basic-pitch` | Basic Pitch (Bittner et al. 2022) | planned |
-| `candle-pitch` | unified CLI | planned |
+| [`candle-pitch`](candle-pitch) | unified CLI | in progress |
 
 ## License
 
