@@ -2,13 +2,25 @@ pub mod notes;
 
 use clap::ValueEnum;
 
-#[derive(Clone, Copy, Debug, ValueEnum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ValueEnum)]
 pub enum Capacity {
     Tiny,
     Small,
     Medium,
     Large,
     Full,
+}
+
+impl Capacity {
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Tiny => "tiny",
+            Self::Small => "small",
+            Self::Medium => "medium",
+            Self::Large => "large",
+            Self::Full => "full",
+        }
+    }
 }
 
 impl From<Capacity> for candle_crepe::Capacity {
@@ -19,6 +31,18 @@ impl From<Capacity> for candle_crepe::Capacity {
             Capacity::Medium => Self::Medium,
             Capacity::Large => Self::Large,
             Capacity::Full => Self::Full,
+        }
+    }
+}
+
+impl From<candle_crepe::Capacity> for Capacity {
+    fn from(c: candle_crepe::Capacity) -> Self {
+        match c {
+            candle_crepe::Capacity::Tiny => Self::Tiny,
+            candle_crepe::Capacity::Small => Self::Small,
+            candle_crepe::Capacity::Medium => Self::Medium,
+            candle_crepe::Capacity::Large => Self::Large,
+            candle_crepe::Capacity::Full => Self::Full,
         }
     }
 }
