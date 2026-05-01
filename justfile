@@ -41,3 +41,11 @@ crepe-prepare-all: \
     (crepe-prepare "medium") \
     (crepe-prepare "large") \
     (crepe-prepare "full")
+
+# === Basic Pitch ===
+
+# Export Basic Pitch TF weights and nnAudio CQT kernels to safetensors.
+# Writes basic_pitch.safetensors (trained CNN, uploadable to HF) and
+# cqt.safetensors (frozen CQT2010v2 buffers, regenerable from params).
+basic-pitch-export:
+    ./candle-basic-pitch/scripts/export_safetensors.py candle-basic-pitch/weights
