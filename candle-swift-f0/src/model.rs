@@ -1,5 +1,8 @@
 use candle_core::{Device, Result, Tensor};
-use candle_nn::{Conv1d, Conv2d, VarBuilder};
+use candle_nn::{Conv1d, Conv1dConfig, Conv2d, Conv2dConfig, VarBuilder, conv1d, conv2d};
+
+use crate::frontend::Frontend;
+use crate::weights::load_safetensors;
 
 pub const N_PITCH_BINS: usize = 200;
 pub const N_FREQ_BINS: usize = 132;
@@ -8,7 +11,6 @@ pub const F_MAX: f32 = 2093.75;
 
 const CHANNELS: [usize; 5] = [8, 16, 32, 64, 1];
 const KERNEL: usize = 5;
-const K_MIN: usize = 3;
 
 struct ConvBlock {
     conv: Conv2d,
@@ -16,7 +18,17 @@ struct ConvBlock {
 
 impl ConvBlock {
     fn new(in_channels: usize, out_channels: usize, vb: VarBuilder) -> Result<Self> {
-        todo!()
+        let conv = conv2d(
+            in_channels,
+            out_channels,
+            KERNEL,
+            Conv2dConfig {
+                padding: KERNEL / 2,
+                ..Default::default()
+            },
+            vb,
+        )?;
+        Ok(Self { conv })
     }
 
     fn forward(&self, x: &Tensor) -> Result<Tensor> {
@@ -25,53 +37,51 @@ impl ConvBlock {
 }
 
 pub struct SwiftF0 {
-    blocks: [ConvBlock; 5],
+    blocks: Vec<ConvBlock>,
     freq_projection: Conv1d,
-    window: Tensor,
+    frontend: Frontend,
     pitch_bin_centers: Tensor,
-    device: Device,
 }
 
 impl SwiftF0 {
     pub fn from_safetensors(bytes: &[u8], device: &Device) -> Result<Self> {
-        todo!()
+        Self::new(load_safetensors(bytes, device)?)
     }
 
     pub fn new(vb: VarBuilder) -> Result<Self> {
-        todo!()
+        let blocks: Vec<ConvBlock> = (0..CHANNELS.len())
+            .map(|i| {
+                let in_ch = if i == 0 { 1 } else { CHANNELS[i - 1] };
+                ConvBlock::new(in_ch, CHANNELS[i], vb.pp(format!("conv{}", i + 1)))
+            })
+            .collect::<Result<_>>()?;
+
+        let freq_projection = conv1d(
+            N_FREQ_BINS,
+            N_PITCH_BINS,
+            1,
+            Conv1dConfig::default(),
+            vb.pp("freq_projection"),
+        )?;
+
+        let device = vb.device();
+        Ok(Self {
+            blocks,
+            freq_projection,
+            frontend: Frontend::new(device),
+            pitch_bin_centers: build_pitch_bin_centers(device)?,
+        })
     }
 
     pub fn forward(&self, audio: &[f32]) -> Result<Tensor> {
         todo!()
     }
-
-    fn frontend(&self, audio: &[f32]) -> Result<Tensor> {
-        todo!()
-    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::test_helpers::{load_fixture, load_weights, max_abs_diff};
-    use candle_core::D;
-
-    const TOLERANCE: f32 = 1e-4;
-    const SLICE_FRAMES: usize = 16;
-
-    #[test]
-    #[ignore]
-    fn frontend_parity() -> Result<()> {
-        let device = Device::Cpu;
-        let expected = load_fixture(&device);
-        let model = SwiftF0::from_safetensors(&load_weights(), &device)?;
-        let audio: Vec<f32> = expected["audio_16k"].to_vec1()?;
-        let slice_start = expected["slice_start"].to_scalar::<i64>()? as usize;
-        let log_mag = model
-            .frontend(&audio)?
-            .narrow(D::Minus1, slice_start, SLICE_FRAMES)?;
-        let diff = max_abs_diff(&log_mag, &expected["log_mag"])?;
-        assert!(diff < TOLERANCE, "log_mag diff {diff:.2e}");
-        Ok(())
-    }
+fn build_pitch_bin_centers(device: &Device) -> Result<Tensor> {
+    let delta = (F_MAX / F_MIN).log2() / (N_PITCH_BINS as f32 - 1.0);
+    let centers: Vec<f32> = (0..N_PITCH_BINS)
+        .map(|i| F_MIN * 2f32.powf(i as f32 * delta))
+        .collect();
+    Tensor::from_vec(centers, N_PITCH_BINS, device)
 }

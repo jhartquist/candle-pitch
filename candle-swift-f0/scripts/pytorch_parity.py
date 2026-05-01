@@ -77,7 +77,7 @@ class SwiftF0(nn.Module):
         return decode(logits, self.pitch_bin_centers)
 
     def frontend(self, audio: torch.Tensor) -> torch.Tensor:
-        # The bundled ONNX uses constant (zero) padding, not reflect — even though
+        # the bundled ONNX uses constant (zero) padding, not reflect — even though
         # swift-f0's training/export.py says reflect. Source of truth is the ONNX.
         x = F.pad(audio, (STFT_PADDING, STFT_PADDING), mode="constant")
         x = torch.stft(
@@ -172,7 +172,7 @@ def dump_fixture(
     for name in ("log_mag", *(f"conv{i}" for i in range(1, len(CHANNELS) + 1)), "freq_projection"):
         tensor = captured[name].numpy()
         fixture[name] = np.ascontiguousarray(tensor[..., start:end])
-    # Store freq_projection in logits layout (B, T, N) so it matches what our
+    # store freq_projection in logits layout (B, T, N) so it matches what our
     # forward() returns; the rest of the model captures stay in (B, C, ..., T).
     fixture["freq_projection"] = np.ascontiguousarray(fixture["freq_projection"].transpose(0, 2, 1))
 
@@ -205,7 +205,7 @@ def verify(weights_path: Path) -> None:
 
     n_frames = len(torch_pitch)
     print(f"swift-f0: PyTorch parity on {AUDIO_PATH.name} ({n_frames} frames)\n")
-    # Tolerances sit just above the fp32 noise floor of two independent STFT/conv
+    # tolerances sit just above the fp32 noise floor of two independent STFT/conv
     # implementations: pre-log STFT magnitudes already agree to ~2e-5; log() then
     # amplifies near-zero bins, but subsequent convs and softmax damp the result
     # back down to ~2e-3 Hz on pitch and ~3e-6 on confidence.

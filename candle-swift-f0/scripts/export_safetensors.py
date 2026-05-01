@@ -28,7 +28,7 @@ import swift_f0
 from safetensors.numpy import save_file
 
 
-# Each entry is (output_name, expected_weight_shape). The list is in graph
+# each entry is (output_name, expected_weight_shape). the list is in graph
 # topological order so it can be zipped against the Conv nodes directly.
 EXPECTED_LAYERS = [
     ("conv1", (8, 1, 5, 5)),

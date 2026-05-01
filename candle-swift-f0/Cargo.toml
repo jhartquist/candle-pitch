@@ -17,6 +17,7 @@ exclude = ["scripts/", "tests/fixtures/"]
 [dependencies]
 candle-core = "0.10.2"
 candle-nn = "0.10.2"
+realfft = "3.5"
 
 [lints]
 workspace = true

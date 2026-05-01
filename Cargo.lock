@@ -323,6 +323,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "candle-swift-f0"
+version = "0.1.0"
+dependencies = [
+ "candle-core",
+ "candle-nn",
+ "realfft",
+]
+
+[[package]]
 name = "candle-ug"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -331,14 +340,6 @@ dependencies = [
  "ug",
  "ug-cuda",
  "ug-metal",
-]
-
-[[package]]
-name = "candle-swift-f0"
-version = "0.1.0"
-dependencies = [
- "candle-core",
- "candle-nn",
 ]
 
 [[package]]
