@@ -1,4 +1,4 @@
-use candle_core::{Device, Result, Tensor};
+use candle_core::{Device, Module, Result, Tensor};
 use candle_nn::{Conv1d, Conv1dConfig, Conv2d, Conv2dConfig, VarBuilder, conv1d, conv2d};
 
 use crate::frontend::Frontend;
@@ -32,7 +32,7 @@ impl ConvBlock {
     }
 
     fn forward(&self, x: &Tensor) -> Result<Tensor> {
-        todo!()
+        self.conv.forward(x)?.relu()
     }
 }
 
@@ -74,7 +74,13 @@ impl SwiftF0 {
     }
 
     pub fn forward(&self, audio: &[f32]) -> Result<Tensor> {
-        todo!()
+        let mut x = self.frontend.forward(audio)?;
+        for block in &self.blocks {
+            x = block.forward(&x)?;
+        }
+        // (1, 1, 132, T) -> (1, 132, T) -> conv1d -> (1, 200, T) -> permute to logits (1, T, 200).
+        let x = x.squeeze(1)?;
+        self.freq_projection.forward(&x)?.permute((0, 2, 1))
     }
 }
 
