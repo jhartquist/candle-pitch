@@ -8,6 +8,7 @@ use clap::Parser;
 use serde::Serialize;
 
 use crate::audio::{self, AudioSource};
+use crate::plot;
 
 const TARGET_SAMPLE_RATE: u32 = 16_000;
 
@@ -22,6 +23,10 @@ pub struct Args {
     /// Output path. Writes JSON to stdout if omitted.
     #[arg(long)]
     output: Option<PathBuf>,
+
+    /// Plot path. Renders notes to PNG (or SVG if path ends in .svg).
+    #[arg(long)]
+    plot: Option<PathBuf>,
 
     /// Directory containing model weights.
     #[arg(long, default_value = "candle-crepe/weights")]
@@ -83,8 +88,8 @@ pub fn run(args: Args) -> Result<(), DynError> {
 
     // run inference
     let predictions = predict(&model, &samples_mono_16k, args.decoder.into())?;
-    // 0.5 voicing threshold, 100 cents (1 semitone) max pitch jump within a note
-    let notes = notes::segment(&predictions, 0.5, 100.0);
+    // 0.5 voicing threshold, 100 cents (1 semitone) max pitch jump, 50ms min note duration
+    let notes = notes::segment(&predictions, 0.5, 100.0, 0.05);
 
     // assemble & return output
     let output = Output {
@@ -110,6 +115,10 @@ pub fn run(args: Args) -> Result<(), DynError> {
             .collect(),
         notes,
     };
+    if let Some(plot_path) = &args.plot {
+        plot::render_notes(&output.notes, plot_path)?;
+    }
+
     let json = serde_json::to_string_pretty(&output)?;
     match args.output {
         Some(path) => std::fs::write(path, json)?,

@@ -16,7 +16,7 @@ categories = ["command-line-utilities", "multimedia::audio"]
 candle-core = "0.10.2"
 candle-crepe = { version = "0.1.0", path = "../candle-crepe" }
 clap = { version = "4.6.1", features = ["derive"] }
-kuva = "0.1.6"
+kuva = { version = "0.1.6", features = ["png"] }
 rubato = "2.0.0"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
