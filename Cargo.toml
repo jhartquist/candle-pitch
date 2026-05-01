@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["candle-crepe", "candle-pitch"]
+members = ["candle-basic-pitch", "candle-crepe", "candle-pitch"]
 
 [workspace.package]
 version = "0.1.0"
