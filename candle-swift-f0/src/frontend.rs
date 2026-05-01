@@ -4,7 +4,7 @@ use candle_core::{Device, Result, Tensor};
 use realfft::{RealFftPlanner, RealToComplex};
 
 use crate::inference::{FRAME_LENGTH, HOP_LENGTH, STFT_PADDING};
-use crate::model::N_FREQ_BINS;
+use crate::model::FREQ_BINS;
 
 // first STFT bin we keep; bins 0..K_MIN are below the model's lowest-frequency band.
 const K_MIN: usize = 3;
@@ -35,7 +35,7 @@ impl Frontend {
 
         let mut input = self.fft.make_input_vec();
         let mut spectrum = self.fft.make_output_vec();
-        let mut log_mag = vec![0f32; n_frames * N_FREQ_BINS];
+        let mut log_mag = vec![0f32; n_frames * FREQ_BINS];
 
         for t in 0..n_frames {
             // copy frame into the FFT input scratch buffer, treating out-of-range
@@ -56,7 +56,7 @@ impl Frontend {
             self.fft
                 .process(&mut input, &mut spectrum)
                 .expect("realfft: input/output buffer mismatch");
-            let row = &mut log_mag[t * N_FREQ_BINS..(t + 1) * N_FREQ_BINS];
+            let row = &mut log_mag[t * FREQ_BINS..(t + 1) * FREQ_BINS];
             for (bin, slot) in row.iter_mut().enumerate() {
                 let c = spectrum[K_MIN + bin];
                 let mag = (c.re * c.re + c.im * c.im).sqrt();
@@ -64,8 +64,8 @@ impl Frontend {
             }
         }
 
-        // (n_frames, N_FREQ_BINS) -> (1, 1, N_FREQ_BINS, n_frames) to feed Conv2d.
-        Tensor::from_vec(log_mag, (n_frames, N_FREQ_BINS), &self.device)?
+        // (n_frames, FREQ_BINS) -> (1, 1, FREQ_BINS, n_frames) to feed Conv2d.
+        Tensor::from_vec(log_mag, (n_frames, FREQ_BINS), &self.device)?
             .t()?
             .unsqueeze(0)?
             .unsqueeze(0)

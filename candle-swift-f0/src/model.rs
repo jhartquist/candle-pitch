@@ -4,8 +4,8 @@ use candle_nn::{Conv1d, Conv1dConfig, Conv2d, Conv2dConfig, VarBuilder, conv1d, 
 use crate::frontend::Frontend;
 use crate::weights::load_safetensors;
 
-pub const N_PITCH_BINS: usize = 200;
-pub const N_FREQ_BINS: usize = 132;
+pub const PITCH_BINS: usize = 200;
+pub const FREQ_BINS: usize = 132;
 pub const F_MIN: f32 = 46.875;
 pub const F_MAX: f32 = 2093.75;
 
@@ -56,8 +56,8 @@ impl SwiftF0 {
             .collect::<Result<_>>()?;
 
         let freq_projection = conv1d(
-            N_FREQ_BINS,
-            N_PITCH_BINS,
+            FREQ_BINS,
+            PITCH_BINS,
             1,
             Conv1dConfig::default(),
             vb.pp("freq_projection"),
@@ -81,7 +81,7 @@ impl SwiftF0 {
     }
 }
 
-pub(crate) fn pitch_bin_centers() -> [f32; N_PITCH_BINS] {
-    let delta = (F_MAX / F_MIN).log2() / (N_PITCH_BINS as f32 - 1.0);
+pub(crate) fn pitch_bin_centers() -> [f32; PITCH_BINS] {
+    let delta = (F_MAX / F_MIN).log2() / (PITCH_BINS as f32 - 1.0);
     std::array::from_fn(|i| F_MIN * 2f32.powf(i as f32 * delta))
 }
