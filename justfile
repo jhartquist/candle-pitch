@@ -55,3 +55,17 @@ swift-f0-pytorch-parity:
 
 # Export weights and dump the parity fixture.
 swift-f0-prepare: swift-f0-export swift-f0-pytorch-parity
+
+# === CLI smoke tests ===
+
+# Run the CLI with CREPE on data/AMajSlow.wav. Writes crepe.json + crepe.png.
+run-crepe capacity="tiny":
+    cargo run --release -p candle-pitch -- \
+        data/AMajSlow.wav --output crepe.json --plot crepe.png \
+        crepe --capacity {{capacity}}
+
+# Run the CLI with Swift-F0 on data/AMajSlow.wav. Writes swift-f0.json + swift-f0.png.
+run-swift-f0:
+    cargo run --release -p candle-pitch -- \
+        data/AMajSlow.wav --output swift-f0.json --plot swift-f0.png \
+        swift-f0

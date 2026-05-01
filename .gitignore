@@ -12,3 +12,9 @@ weights/
 
 # OS
 .DS_Store
+
+# CLI smoke-test outputs (just run-crepe / run-swift-f0)
+/crepe.json
+/crepe.png
+/swift-f0.json
+/swift-f0.png
