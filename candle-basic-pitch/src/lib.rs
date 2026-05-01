@@ -4,6 +4,9 @@ mod model;
 mod postprocess;
 mod weights;
 
+#[cfg(test)]
+mod test_helpers;
+
 pub use frontend::{Frontend, N_BINS};
 pub use inference::{
     ANNOTATIONS_FPS, AUDIO_N_SAMPLES, HOP, Heads, SAMPLE_RATE, predict, run,

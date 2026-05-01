@@ -32,3 +32,23 @@ impl Frontend {
         todo!()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_helpers::{load_cqt_weights, load_fixture, max_abs_diff};
+
+    #[test]
+    #[ignore]
+    fn cqt_window_parity() -> Result<()> {
+        let device = Device::Cpu;
+        let frontend = Frontend::from_safetensors(&load_cqt_weights(), &device)?;
+        let fixture = load_fixture(&device);
+        let audio: Vec<f32> = fixture["window_audio"].to_vec1()?;
+        let mag = frontend.forward(&audio)?.squeeze(0)?.squeeze(0)?;
+        let diff = max_abs_diff(&mag, &fixture["window_cqt_mag"])?;
+        assert!(diff < 1e-3, "cqt diff {diff:.2e}");
+        Ok(())
+    }
+}
+
