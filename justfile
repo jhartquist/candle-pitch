@@ -49,3 +49,11 @@ crepe-prepare-all: \
 # cqt.safetensors (frozen CQT2010v2 buffers, regenerable from params).
 basic-pitch-export:
     ./candle-basic-pitch/scripts/export_safetensors.py candle-basic-pitch/weights
+
+# Validate the safetensors via PyTorch reimpl against the TF reference, then
+# dump the parity fixture to candle-basic-pitch/tests/fixtures/basic_pitch.safetensors.
+basic-pitch-pytorch-parity:
+    ./candle-basic-pitch/scripts/pytorch_parity.py candle-basic-pitch/weights/basic_pitch.safetensors
+
+# Export weights and dump the parity fixture.
+basic-pitch-prepare: basic-pitch-export basic-pitch-pytorch-parity
