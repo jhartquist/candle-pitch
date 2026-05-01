@@ -1,5 +1,31 @@
-use candle_crepe::PredictionFrame;
 use serde::Serialize;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PredictionFrame {
+    pub time_seconds: f32,
+    pub frequency_hz: f32,
+    pub confidence: f32,
+}
+
+impl From<candle_crepe::PredictionFrame> for PredictionFrame {
+    fn from(f: candle_crepe::PredictionFrame) -> Self {
+        Self {
+            time_seconds: f.time_seconds,
+            frequency_hz: f.frequency_hz,
+            confidence: f.confidence,
+        }
+    }
+}
+
+impl From<candle_swift_f0::PredictionFrame> for PredictionFrame {
+    fn from(f: candle_swift_f0::PredictionFrame) -> Self {
+        Self {
+            time_seconds: f.time_seconds,
+            frequency_hz: f.pitch_hz,
+            confidence: f.confidence,
+        }
+    }
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Note {
