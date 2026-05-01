@@ -13,12 +13,13 @@ keywords = ["audio", "pitch-detection", "candle", "cli"]
 categories = ["command-line-utilities", "multimedia::audio"]
 
 [features]
-metal = ["candle-crepe/metal", "candle-core/metal"]
-cuda = ["candle-crepe/cuda", "candle-core/cuda"]
+metal = ["candle-crepe/metal", "candle-swift-f0/metal", "candle-core/metal"]
+cuda = ["candle-crepe/cuda", "candle-swift-f0/cuda", "candle-core/cuda"]
 
 [dependencies]
 candle-core = "0.10.2"
 candle-crepe = { version = "0.1.0", path = "../candle-crepe" }
+candle-swift-f0 = { version = "0.1.0", path = "../candle-swift-f0" }
 clap = { version = "4.6.1", features = ["derive"] }
 kuva = { version = "0.1.6", features = ["png"] }
 rubato = "2.0.0"
