@@ -6,7 +6,6 @@ use candle_core::{Device, Result, Tensor};
 const TOLERANCE: f32 = 1e-3;
 
 #[test]
-#[ignore]
 fn from_safetensors_loads() -> Result<()> {
     let device = Device::Cpu;
     let _frontend = Frontend::from_safetensors(&load_cqt_weights(), &device)?;
@@ -15,7 +14,6 @@ fn from_safetensors_loads() -> Result<()> {
 }
 
 #[test]
-#[ignore]
 fn run_parity() -> Result<()> {
     let device = Device::Cpu;
     let expected = load_fixture(&device);
