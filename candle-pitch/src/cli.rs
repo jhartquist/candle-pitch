@@ -15,8 +15,6 @@ const MAX_PITCH_JUMP_CENTS: f32 = 100.0;
 const MIN_NOTE_DURATION_SECONDS: f32 = 0.05;
 
 const DEFAULT_CREPE_CAPACITY: Capacity = Capacity::Tiny;
-const CREPE_WEIGHTS_DIR: &str = "candle-crepe/weights";
-const SWIFT_F0_WEIGHTS_PATH: &str = "candle-swift-f0/weights/swift-f0.safetensors";
 
 type DynError = Box<dyn std::error::Error>;
 
@@ -68,8 +66,8 @@ struct CrepeArgs {
     #[arg(long, value_enum, default_value = "viterbi")]
     decoder: Decoder,
 
-    /// Path to a CREPE safetensors file. If omitted, loads from
-    /// candle-crepe/weights/{capacity}.safetensors.
+    /// Path to a CREPE safetensors file. If omitted, fetches the requested
+    /// capacity from huggingface.co/jhartquist/crepe.
     #[arg(long)]
     weights: Option<PathBuf>,
 }
@@ -79,9 +77,10 @@ struct SwiftF0Args {
     #[command(flatten)]
     shared: SharedArgs,
 
-    /// Path to the Swift-F0 safetensors file.
-    #[arg(long, default_value = SWIFT_F0_WEIGHTS_PATH)]
-    weights: PathBuf,
+    /// Path to the Swift-F0 safetensors file. If omitted, fetches from
+    /// huggingface.co/jhartquist/swift-f0.
+    #[arg(long)]
+    weights: Option<PathBuf>,
 }
 
 struct Inference {
@@ -209,18 +208,17 @@ fn run_crepe(
     audio: &[f32],
     device: &Device,
 ) -> Result<Inference, DynError> {
-    let weights_bytes = match weights {
+    let model = match weights {
         Some(path) => {
-            std::fs::read(&path).map_err(|e| format!("read weights {}: {e}", path.display()))?
+            let bytes = std::fs::read(&path)
+                .map_err(|e| format!("read weights {}: {e}", path.display()))?;
+            candle_crepe::Crepe::from_safetensors(&bytes, device)?
         }
         None => {
             let capacity = requested_capacity.unwrap_or(DEFAULT_CREPE_CAPACITY);
-            let path =
-                PathBuf::from(CREPE_WEIGHTS_DIR).join(format!("{}.safetensors", capacity.name()));
-            std::fs::read(&path).map_err(|e| format!("read weights {}: {e}", path.display()))?
+            candle_crepe::Crepe::from_hub(capacity.into(), device)?
         }
     };
-    let model = candle_crepe::Crepe::from_safetensors(&weights_bytes, device)?;
     let loaded: Capacity = model.capacity().into();
     if let Some(requested) = requested_capacity
         && requested != loaded
@@ -246,10 +244,19 @@ fn run_crepe(
     })
 }
 
-fn run_swift_f0(weights: PathBuf, audio: &[f32], device: &Device) -> Result<Inference, DynError> {
-    let bytes =
-        std::fs::read(&weights).map_err(|e| format!("read weights {}: {e}", weights.display()))?;
-    let model = candle_swift_f0::SwiftF0::from_safetensors(&bytes, device)?;
+fn run_swift_f0(
+    weights: Option<PathBuf>,
+    audio: &[f32],
+    device: &Device,
+) -> Result<Inference, DynError> {
+    let model = match weights {
+        Some(path) => {
+            let bytes = std::fs::read(&path)
+                .map_err(|e| format!("read weights {}: {e}", path.display()))?;
+            candle_swift_f0::SwiftF0::from_safetensors(&bytes, device)?
+        }
+        None => candle_swift_f0::SwiftF0::from_hub(device)?,
+    };
     let predictions = candle_swift_f0::predict(&model, audio)?;
     Ok(Inference {
         name: "swift-f0",
