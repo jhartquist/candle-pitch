@@ -1,6 +1,7 @@
 use candle_core::{Result, Tensor};
 
 use crate::model::{Crepe, PITCH_BINS};
+use crate::viterbi;
 
 // Bin 0 is C1 (~32.7 Hz); bins are 20 cents apart up to bin 359.
 #[allow(clippy::excessive_precision)]
@@ -47,11 +48,12 @@ pub fn predict(model: &Crepe, audio: &[f32], decoder: Decoder) -> Result<Vec<Pre
 }
 
 pub(crate) fn decode(salience: &Tensor, decoder: Decoder) -> Result<Decoded> {
+    let salience_rows: Vec<Vec<f32>> = salience.to_vec2()?;
     let centers = match decoder {
-        Decoder::Viterbi => Some(viterbi_path(salience)?),
+        Decoder::Viterbi => Some(viterbi::most_likely_path(&salience_rows)),
         Decoder::LocalAverage => None,
     };
-    let cents = local_average_cents(salience, centers.as_deref())?;
+    let cents = local_average_cents(&salience_rows, centers.as_deref());
     let frequencies_hz = cents
         .iter()
         .map(|&c| {
@@ -69,8 +71,7 @@ pub(crate) fn decode(salience: &Tensor, decoder: Decoder) -> Result<Decoded> {
     })
 }
 
-fn local_average_cents(salience: &Tensor, centers: Option<&[usize]>) -> Result<Vec<f64>> {
-    let salience: Vec<Vec<f32>> = salience.to_vec2()?;
+fn local_average_cents(salience: &[Vec<f32>], centers: Option<&[usize]>) -> Vec<f64> {
     let n_frames = salience.len();
     let mut cents = Vec::with_capacity(n_frames);
     for t in 0..n_frames {
@@ -90,95 +91,10 @@ fn local_average_cents(salience: &Tensor, centers: Option<&[usize]>) -> Result<V
         }
         cents.push(sum_wc / sum_w as f64);
     }
-    Ok(cents)
+    cents
 }
 
-fn viterbi_path(salience: &Tensor) -> Result<Vec<usize>> {
-    let salience: Vec<Vec<f32>> = salience.to_vec2()?;
-    let n_frames = salience.len();
-    const N: usize = PITCH_BINS;
-    // kernel(d) = max(12 - |d|, 0) is zero outside ±11 bins, so banding is exact.
-    const BAND: usize = 11;
-
-    let observations: Vec<usize> = salience.iter().map(|row| argmax_first(row)).collect();
-
-    let p_self = 0.1_f64;
-    let p_other = (1.0 - p_self) / N as f64;
-    let log_emit_self = (p_other + p_self).ln();
-    let log_emit_other = p_other.ln();
-    let log_start = -(N as f64).ln();
-
-    let mut log_trans = vec![f64::NEG_INFINITY; N * N];
-    for j in 0..N {
-        let lo = j.saturating_sub(BAND);
-        let hi = (j + BAND + 1).min(N);
-        let mut row_sum = 0.0_f64;
-        for k in lo..hi {
-            row_sum += 12.0 - (j as f64 - k as f64).abs();
-        }
-        let log_rs = row_sum.ln();
-        for k in lo..hi {
-            let p = 12.0 - (j as f64 - k as f64).abs();
-            log_trans[j * N + k] = p.ln() - log_rs;
-        }
-    }
-
-    let mut log_prob = vec![0.0_f64; n_frames * N];
-    for (k, slot) in log_prob[..N].iter_mut().enumerate() {
-        let emit = if k == observations[0] {
-            log_emit_self
-        } else {
-            log_emit_other
-        };
-        *slot = log_start + emit;
-    }
-    for t in 1..n_frames {
-        let (prev_slice, curr_slice) = log_prob.split_at_mut(t * N);
-        let prev = &prev_slice[(t - 1) * N..t * N];
-        let curr = &mut curr_slice[..N];
-        let obs_t = observations[t];
-        for k in 0..N {
-            let emit = if k == obs_t {
-                log_emit_self
-            } else {
-                log_emit_other
-            };
-            let lo = k.saturating_sub(BAND);
-            let hi = (k + BAND + 1).min(N);
-            let mut best = f64::NEG_INFINITY;
-            for j in lo..hi {
-                let s = prev[j] + log_trans[j * N + k];
-                if s > best {
-                    best = s;
-                }
-            }
-            curr[k] = best + emit;
-        }
-    }
-
-    // Final frame uses numpy first-index argmax; earlier frames use hmmlearn last-index.
-    let mut path = vec![0usize; n_frames];
-    path[n_frames - 1] = argmax_first(&log_prob[(n_frames - 1) * N..n_frames * N]);
-    for t in (0..n_frames - 1).rev() {
-        let next = path[t + 1];
-        let row = &log_prob[t * N..(t + 1) * N];
-        let lo = next.saturating_sub(BAND);
-        let hi = (next + BAND + 1).min(N);
-        let mut best = f64::NEG_INFINITY;
-        let mut best_idx = lo;
-        for j in lo..hi {
-            let s = row[j] + log_trans[j * N + next];
-            if s >= best {
-                best = s;
-                best_idx = j;
-            }
-        }
-        path[t] = best_idx;
-    }
-    Ok(path)
-}
-
-fn argmax_first<T: PartialOrd + Copy>(row: &[T]) -> usize {
+pub(crate) fn argmax_first<T: PartialOrd + Copy>(row: &[T]) -> usize {
     let mut best = 0;
     for (i, v) in row.iter().enumerate().skip(1) {
         if *v > row[best] {

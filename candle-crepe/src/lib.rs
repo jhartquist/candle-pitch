@@ -1,5 +1,6 @@
 mod inference;
 mod model;
+mod viterbi;
 mod weights;
 
 #[cfg(test)]
