@@ -47,6 +47,19 @@ impl SwiftF0 {
         Self::new(load_safetensors(bytes, device)?)
     }
 
+    #[cfg(feature = "hf-hub")]
+    pub fn from_hub(device: &Device) -> Result<Self> {
+        let api = hf_hub::api::sync::Api::new()
+            .map_err(|e| candle_core::Error::Msg(format!("hf-hub: {e}")))?;
+        let path = api
+            .model(crate::HUB_REPO_ID.to_string())
+            .get(crate::HUB_WEIGHTS_FILENAME)
+            .map_err(|e| candle_core::Error::Msg(format!("hf-hub: {e}")))?;
+        let bytes = std::fs::read(&path)
+            .map_err(|e| candle_core::Error::Msg(format!("read {}: {e}", path.display())))?;
+        Self::from_safetensors(&bytes, device)
+    }
+
     pub fn new(vb: VarBuilder) -> Result<Self> {
         let blocks: Vec<ConvBlock> = (0..CHANNELS.len())
             .map(|i| {

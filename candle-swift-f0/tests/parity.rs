@@ -38,6 +38,15 @@ fn predict_parity() -> Result<()> {
     assert_predictions(&predictions, &expected)
 }
 
+#[cfg(feature = "hf-hub")]
+#[test]
+#[ignore = "downloads weights from huggingface.co"]
+fn from_hub_loads() -> Result<()> {
+    let device = Device::Cpu;
+    let _model = SwiftF0::from_hub(&device)?;
+    Ok(())
+}
+
 fn load_weights() -> Vec<u8> {
     let path = format!(
         "{}/weights/swift-f0.safetensors",
