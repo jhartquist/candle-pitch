@@ -119,6 +119,19 @@ impl Crepe {
         Self::new(load_safetensors(bytes, device)?)
     }
 
+    #[cfg(feature = "hf-hub")]
+    pub fn from_hub(capacity: Capacity, device: &Device) -> Result<Self> {
+        let api = hf_hub::api::sync::Api::new()
+            .map_err(|e| candle_core::Error::Msg(format!("hf-hub: {e}")))?;
+        let path = api
+            .model(crate::HUB_REPO_ID.to_string())
+            .get(&format!("{capacity}.safetensors"))
+            .map_err(|e| candle_core::Error::Msg(format!("hf-hub: {e}")))?;
+        let bytes = std::fs::read(&path)
+            .map_err(|e| candle_core::Error::Msg(format!("read {}: {e}", path.display())))?;
+        Self::from_safetensors(&bytes, device)
+    }
+
     pub fn new(vb: VarBuilder) -> Result<Self> {
         let conv1_out = vb.get_unchecked("conv1.conv.weight")?.dim(0)?;
         let multiplier = conv1_out / FILTERS[0];

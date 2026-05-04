@@ -61,6 +61,16 @@ parity_for_capacity!(medium, Capacity::Medium);
 parity_for_capacity!(large, Capacity::Large);
 parity_for_capacity!(full, Capacity::Full);
 
+#[cfg(feature = "hf-hub")]
+#[test]
+#[ignore = "downloads weights from huggingface.co"]
+fn from_hub_loads_tiny() -> Result<()> {
+    let device = Device::Cpu;
+    let model = Crepe::from_hub(Capacity::Tiny, &device)?;
+    assert_eq!(model.capacity(), Capacity::Tiny);
+    Ok(())
+}
+
 fn load_weights(capacity: Capacity) -> Vec<u8> {
     let path = format!(
         "{}/weights/{capacity}.safetensors",
