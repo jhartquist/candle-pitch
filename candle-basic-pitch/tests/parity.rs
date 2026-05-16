@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use candle_basic_pitch::{BasicPitch, Frontend, Note, predict, run};
+use candle_basic_pitch::{BasicPitch, Frontend, Note, PredictConfig, predict, run};
 use candle_core::{Device, Result, Tensor};
 
 const TOLERANCE: f32 = 1e-3;
@@ -32,7 +32,6 @@ fn run_parity() -> Result<()> {
 }
 
 #[test]
-#[ignore]
 fn predict_parity() -> Result<()> {
     let device = Device::Cpu;
     let expected = load_fixture(&device);
@@ -40,7 +39,7 @@ fn predict_parity() -> Result<()> {
     let model = BasicPitch::from_safetensors(&load_weights(), &device)?;
     let audio: Vec<f32> = expected["audio_22k"].to_vec1()?;
 
-    let notes = predict(&model, &frontend, &audio)?;
+    let notes = predict(&model, &frontend, &audio, &PredictConfig::default())?;
     assert_notes(&notes, &expected)
 }
 

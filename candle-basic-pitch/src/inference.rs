@@ -2,7 +2,7 @@ use candle_core::{Result, Tensor};
 
 use crate::frontend::Frontend;
 use crate::model::BasicPitch;
-use crate::postprocess::Note;
+use crate::postprocess::{self, Note};
 
 pub const SAMPLE_RATE: u32 = 22_050;
 pub const HOP: usize = 256;
@@ -64,8 +64,42 @@ pub fn run(model: &BasicPitch, frontend: &Frontend, audio: &[f32]) -> Result<Hea
     })
 }
 
-pub fn predict(_model: &BasicPitch, _frontend: &Frontend, _audio: &[f32]) -> Result<Vec<Note>> {
-    todo!()
+// thresholds and limits for the polyphonic note detector. defaults match
+// the basic_pitch python package.
+#[derive(Clone, Copy, Debug)]
+pub struct PredictConfig {
+    pub onset_thresh: f32,
+    pub frame_thresh: f32,
+    pub min_note_len_ms: f32,
+}
+
+impl Default for PredictConfig {
+    fn default() -> Self {
+        Self {
+            onset_thresh: 0.5,
+            frame_thresh: 0.3,
+            min_note_len_ms: 128.0,
+        }
+    }
+}
+
+pub fn predict(
+    model: &BasicPitch,
+    frontend: &Frontend,
+    audio: &[f32],
+    config: &PredictConfig,
+) -> Result<Vec<Note>> {
+    let heads = run(model, frontend, audio)?;
+    let min_note_len_frames =
+        (config.min_note_len_ms / 1000.0 * ANNOTATIONS_FPS as f32).round() as usize;
+    postprocess::detect_notes(
+        &heads.contour,
+        &heads.note,
+        &heads.onset,
+        config.onset_thresh,
+        config.frame_thresh,
+        min_note_len_frames,
+    )
 }
 
 // trim N_OLAP_TRIM frames from each end of every per-window tensor, concat
